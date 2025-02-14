@@ -1,0 +1,1 @@
+tg_token = "7941054212:AAFMoTj7ZxIfsKBQihcWIZmC6AOicAxrl94"

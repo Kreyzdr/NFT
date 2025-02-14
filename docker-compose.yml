@@ -1,0 +1,16 @@
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: kreyzdr
+      POSTGRES_PASSWORD: N6ft3574w3gecPPure3910Ol
+      POSTGRES_DB: UserNFTHub
+    volumes:
+      - F:/work/progekt/TG-APP/postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - mynetwork
+networks:
+  mynetwork:
+    driver: bridge
