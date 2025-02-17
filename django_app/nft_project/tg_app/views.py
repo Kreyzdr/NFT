@@ -1,11 +1,15 @@
 import random
 from django.db import transaction
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated  # Предполагается, что у вас настроена аутентификация по Telegram
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import render
+
+
 from .models import User, Roll
+
+
 
 def home(request):
     """
@@ -17,24 +21,45 @@ def home(request):
 @api_view(['GET'])
 def get_user(request):
     """
-    Получение данных пользователя по telegram_id.
+    Получение или создание/обновление данных пользователя по telegram_id.
 
     Параметры запроса:
-      - telegram_id: идентификатор пользователя в Telegram.
+      - telegram_id: идентификатор пользователя в Telegram (обязательный параметр).
+      - username: никнейм пользователя (опционально).
+
+    Логика работы:
+      - Если пользователь найден, обновляем его данные (например, username).
+      - Если пользователь не найден, создаем новую запись.
+      - В случае отсутствия параметра telegram_id возвращаем ошибку.
     """
+
     telegram_id = request.GET.get("telegram_id")
+
     if not telegram_id:
-        return Response({"error": "telegram_id не предоставлен"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"error": "telegram_id не предоставлен"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    username = request.GET.get("username", "")
 
     try:
+        # Пытаемся найти пользователя по telegram_id
         user = User.objects.get(telegram_id=telegram_id)
+
+        # Если передан username и он отличается от сохраненного, обновляем его
+        if username and user.username != username:
+            user.username = username
+            user.save()
+
     except User.DoesNotExist:
-        return Response({"error": "Пользователь не найден"}, status=status.HTTP_404_NOT_FOUND)
+        # Если пользователь не найден, создаем новую запись
+        user = User.objects.create(telegram_id=telegram_id, username=username)
 
     return Response({
         "telegram_id": user.telegram_id,
         "attempts_left": user.attempts_left
-    })
+    }, status=status.HTTP_200_OK)
 
 
 @api_view(['POST'])
@@ -50,6 +75,7 @@ def roll(request):
     Параметры запроса:
       - telegram_id: идентификатор пользователя в Telegram (передаётся через тело запроса или GET-параметры).
     """
+
     telegram_id = request.data.get("telegram_id") or request.GET.get("telegram_id")
     if not telegram_id:
         return Response({"error": "telegram_id не предоставлен"}, status=status.HTTP_400_BAD_REQUEST)
@@ -82,6 +108,7 @@ def roll(request):
         "probabilities": probabilities
     }, status=status.HTTP_201_CREATED)
 
+"""Как вы помните я хотел сделать принятие и отмену в ТЗ. Но меня отговорили... Но я оставлю может вам потом пригодится"""
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -94,7 +121,9 @@ def accept_roll(request, roll_id):
     Аргументы:
       - roll_id: идентификатор ролла, который необходимо принять.
     """
+
     telegram_id = getattr(request.user, "telegram_id", None)
+
     if not telegram_id:
         return Response({"error": "Не удалось определить telegram_id пользователя"}, status=status.HTTP_400_BAD_REQUEST)
 

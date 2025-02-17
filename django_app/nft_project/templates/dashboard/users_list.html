@@ -1,0 +1,65 @@
+{% extends "dashboard/base.html" %}
+
+{% block content %}
+<h1>Пользователи</h1>
+
+<form method="GET" action="">
+  <input type="text" name="q" placeholder="Поиск по UID/username..." value="{{ query }}">
+  <button type="submit">Поиск</button>
+</form>
+
+<table>
+  <thead>
+    <tr>
+      <th>UID</th>
+      <th>Username</th>
+      <th>Создан</th>
+      <th>Удалить</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for user in users %}
+    <tr>
+      <td>{{ user.telegram_id }}</td>
+      <td>{{ user.username|default:"—" }}</td>
+      <td>{{ user.created_at|date:"d.m.Y H:i" }}</td>
+      <td>
+        <a class="delete-btn" href="{% url 'dashboard:delete_user' user.id %}"
+           onclick="return confirm('Удалить пользователя {{ user.telegram_id }}?');">
+          🗑
+        </a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="4">Нет пользователей</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<style>
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px;
+    border-bottom: 1px solid #ddd;
+  }
+  tr:hover {
+    background-color: #f0f0f0;
+  }
+  .delete-btn {
+    color: #ff5c5c;
+    text-decoration: none;
+    font-weight: bold;
+  }
+  .delete-btn:hover {
+    color: #ff2c2c;
+  }
+</style>
+
+{% endblock %}

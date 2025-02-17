@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Custom Admin - Dashboard</title>
+  <style>
+    body {
+      margin: 0; padding: 0;
+      font-family: "Inter", sans-serif;
+      background-color: #f5f6f8;
+      color: #333;
+    }
+    header {
+      background-color: #2e2e3a;
+      color: #fff;
+      padding: 10px 20px;
+    }
+    header .logo {
+      font-weight: bold;
+      font-size: 1.2rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 4px;
+    }
+    .messages {
+      margin-bottom: 10px;
+    }
+    .messages .success {
+      background: #e2f7e2;
+      border-left: 4px solid #5cb85c;
+      padding: 8px;
+      margin-bottom: 5px;
+    }
+    footer {
+      text-align: center;
+      font-size: 0.9rem;
+      color: #aaa;
+      margin-top: 40px;
+      padding: 10px;
+    }
+    nav a {
+      color: #fff;
+      margin-right: 20px;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo"><h3>Панель админа</h3></div>
+    <nav>
+      <a href="{% url 'dashboard:users_list' %}">Пользователи</a>
+      <a href="#">Настройки</a>
+      <a href="#">Логи</a>
+    </nav>
+  </header>
+
+  <div class="container">
+    <div class="messages">
+      {% if messages %}
+        {% for msg in messages %}
+          <div class="success">{{ msg }}</div>
+        {% endfor %}
+      {% endif %}
+    </div>
+
+    {% block content %}{% endblock %}
+  </div>
+
+  <footer>
+    <p>© 2025 Кастомная админ понель. 🍒</p>
+  </footer>
+</body>
+</html>

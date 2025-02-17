@@ -15,18 +15,23 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-# Импортируем наши view-функции из приложения tg_app:
-# Обратите внимание на правильный путь импорта
+from django.urls import path, include
+
+
 from tg_app.views import home, get_user, roll, accept_roll, cancel_roll
 
+
+
 urlpatterns = [
+    # админ панели
     path('admin/', admin.site.urls),
+    path('dashboard/', include('dashboard.urls', namespace='dashboard')),
+
 
     # Главная страница
     path('', home, name='home'),
 
-    # Эндпоинты для вашего API
+    # Эндпоинты для  API
     path('api/user', get_user, name='api-user'),
     path('api/roll', roll, name='api-roll'),
     path('api/rolls/<int:roll_id>/accept', accept_roll, name='api-accept-roll'),

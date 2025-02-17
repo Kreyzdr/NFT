@@ -1,7 +1,11 @@
+""""Ну возможно вы спросите: <Зачем он так подробно описал здесь?>. И ответ: да потому что потом тратить время на чтение
+желание нет, а тут чисто и сразу понятно, какие есть модели и что в них"""
+
 from django.db import models
 
 # Модель для пользователей
 class User(models.Model):
+
     # Уникальный идентификатор пользователя из Telegram
     telegram_id = models.BigIntegerField(unique=True)
 
@@ -24,8 +28,11 @@ class User(models.Model):
         # Строковое представление пользователя (для админки и других целей)
         return f"User {self.telegram_id} - {self.username}"
 
+
+
 # Модель для роллов (попыток получения NFT)
 class Roll(models.Model):
+
     # Ссылка на пользователя, который сделал попытку
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 

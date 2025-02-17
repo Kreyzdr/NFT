@@ -1,127 +1,242 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roll Your Chance</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-            background-color: #ffffff;
-        }
-        .container {
-            width: 100%;
-            max-width: 400px;
-            margin: auto;
-            padding: 20px;
-        }
-        .attempts {
-            font-size: 50px;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-        .roll-button {
-            width: 100%;
-            padding: 15px;
-            font-size: 20px;
-            font-weight: bold;
-            background-color: #e0e0e0;
-            border: none;
-            cursor: pointer;
-        }
-        .roll-button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
-        }
-        .results {
-            margin-top: 20px;
-            font-size: 18px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFT Roll</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      background: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      position: relative; /* Для позиционирования кнопки в правом верхнем углу */
+    }
+    .container {
+      text-align: center;
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      width: 300px;
+    }
+    .attempts {
+      font-size: 3rem;
+      margin-bottom: 20px;
+    }
+    button {
+      display: inline-block;
+      padding: 12px 24px;
+      font-size: 1.2rem;
+      background-color: #007BFF;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      outline: none;
+      transition: background-color 0.3s ease;
+    }
+    button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
+    button:hover:not(:disabled) {
+      background-color: #0056b3;
+    }
+    .nft-list {
+      margin-top: 20px;
+      text-align: left;
+    }
+    .nft-item {
+      font-size: 1rem;
+      margin: 4px 0;
+    }
+    .error,
+    .message {
+      margin-top: 20px;
+      color: #c00;
+      font-weight: bold;
+      font-size: 1rem;
+    }
+    .message {
+      color: green;
+    }
+    /* Кнопка "Админ-панель" в правом верхнем углу */
+    .admin-button {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(45deg, #ff5722, #ff784e);
+      color: #fff;
+      text-decoration: none;
+      border-radius: 50%;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      font-size: 1.4rem;
+    }
+    .admin-button:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    }
+    /* Иконка внутри кнопки (при желании можно заменить на svg или другую) */
+    .admin-button i {
+      margin: 0; /* Без отступа, т.к. мы используем одну иконку */
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div id="attempts" class="attempts">3</div>
-        <button id="rollBtn" class="roll-button">ROLL</button>
-        <!-- Дополнительные кнопки для принятия или отклонения ролла -->
-        <button id="acceptBtn" class="roll-button">Принять новый</button>
-        <button id="cancelBtn" class="roll-button">Оставить прошлый</button>
-        <div id="results" class="results"></div>
+  <a href="/dashboard/users/" class="admin-button" title="Админ-панель">
+    <i>⚙️</i>
+  </a>
+
+  <div class="container">
+    <div class="attempts" id="attempts">0</div>
+    <button id="rollBtn" disabled>ROLL</button>
+
+    <div id="nftContainer" class="nft-list" style="display:none;">
+      <div class="nft-item" id="nft1"></div>
+      <div class="nft-item" id="nft2"></div>
+      <div class="nft-item" id="nft3"></div>
+      <div class="nft-item" id="nft4"></div>
+      <div class="nft-item" id="nft5"></div>
+      <div class="nft-item" id="nft6"></div>
     </div>
 
-    <script>
-        // Получение параметра telegram_id из URL (если потребуется)
-        const telegramId = new URLSearchParams(window.location.search).get("telegram_id");
+    <div id="error" class="error" style="display:none;"></div>
+    <div id="message" class="message" style="display:none;"></div>
+  </div>
 
-        // Глобальная переменная для хранения текущего roll_id
-        let currentRollId = null;
+  <script>
 
-        function updateUI(data) {
-            document.getElementById("attempts").textContent = data.attempts_left;
-            if (data.attempts_left <= 0) {
-                document.getElementById("rollBtn").disabled = true;
-            }
+    const attemptsEl = document.getElementById('attempts');
+    const rollBtn = document.getElementById('rollBtn');
+    const nftContainer = document.getElementById('nftContainer');
+    const nft1El = document.getElementById('nft1');
+    const nft2El = document.getElementById('nft2');
+    const nft3El = document.getElementById('nft3');
+    const nft4El = document.getElementById('nft4');
+    const nft5El = document.getElementById('nft5');
+    const nft6El = document.getElementById('nft6');
+    const errorEl = document.getElementById('error');
+    const messageEl = document.getElementById('message');
+
+    // Функция для вывода ошибки
+    function showError(msg) {
+      errorEl.style.display = 'block';
+      errorEl.textContent = msg;
+      messageEl.style.display = 'none';
+    }
+
+    // Функция для вывода позитивного сообщения
+    function showMessage(msg) {
+      messageEl.style.display = 'block';
+      messageEl.textContent = msg;
+      errorEl.style.display = 'none';
+    }
+
+    // Скрыть все сообщения
+    function clearMessages() {
+      errorEl.style.display = 'none';
+      messageEl.style.display = 'none';
+    }
+
+    // Получение данных пользователя
+    async function fetchUserData() {
+      try {
+        const resp = await fetch(`/api/user?telegram_id=${TELEGRAM_ID}`);
+        const data = await resp.json();
+        if (!resp.ok) {
+          if (data.error) {
+            showError(data.error);
+          } else {
+            showError("Ошибка при получении пользователя");
+          }
+          rollBtn.disabled = true;
+          return;
         }
 
-        function fetchUserData() {
-            fetch(`/api/user?telegram_id=${telegramId}`)
-                .then(response => response.json())
-                .then(updateUI)
-                .catch(console.error);
+        // Устанавливаем количество попыток
+        attemptsEl.textContent = data.attempts_left;
+
+        // Если попыток нет, отключаем кнопку
+        if (data.attempts_left <= 0) {
+          rollBtn.disabled = true;
+        } else {
+          rollBtn.disabled = false;
+        }
+      } catch (error) {
+        showError("Не удалось получить данные пользователя");
+      }
+    }
+
+    // Функция roll
+    async function doRoll() {
+      clearMessages();
+
+      // Проверяем, есть ли попытки
+      const currentAttempts = parseInt(attemptsEl.textContent, 10);
+      if (currentAttempts <= 0) {
+        showError("Попытки закончились");
+        rollBtn.disabled = true;
+        return;
+      }
+
+      // Отправляем POST-запрос на /api/roll
+      try {
+        const resp = await fetch('/api/roll', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ telegram_id: TELEGRAM_ID })
+        });
+        const data = await resp.json();
+
+        if (!resp.ok) {
+          if (data.error) {
+            showError(data.error);
+          } else {
+            showError("Ошибка при выполнении ролла");
+          }
+          return;
         }
 
-        document.getElementById("rollBtn").addEventListener("click", () => {
-            fetch(`/api/roll?telegram_id=${telegramId}`, { method: "POST" })
-                .then(response => response.json())
-                .then(data => {
-                    // Сохраняем roll_id для дальнейших действий
-                    currentRollId = data.roll_id;
-                    updateUI(data);
-                    document.getElementById("results").innerHTML = `
-                        NFT 1: ${data.probabilities.NFT1}%<br>
-                        NFT 2: ${data.probabilities.NFT2}%<br>
-                        NFT 3: ${data.probabilities.NFT3}%<br>
-                        NFT 4: ${data.probabilities.NFT4}%<br>
-                        NFT 5: ${data.probabilities.NFT5}%<br>
-                        NFT 6: ${data.probabilities.NFT6}%<br>
-                    `;
-                })
-                .catch(console.error);
-        });
+        // Уменьшаем счетчик попыток
+        attemptsEl.textContent = data.attempts_left;
 
-        // Обработчик для принятия нового ролла
-        document.getElementById("acceptBtn").addEventListener("click", () => {
-            if (!currentRollId) {
-                alert("Сначала выполните ролл!");
-                return;
-            }
-            fetch(`/api/rolls/${currentRollId}/accept`, { method: "POST" })
-                .then(response => response.json())
-                .then(data => {
-                    alert("Ролл принят: " + JSON.stringify(data.final_probabilities));
-                })
-                .catch(console.error);
-        });
+        // Отображаем вероятности
+        nftContainer.style.display = 'block';
+        nft1El.textContent = `NFT1: ${data.probabilities.NFT1}%`;
+        nft2El.textContent = `NFT2: ${data.probabilities.NFT2}%`;
+        nft3El.textContent = `NFT3: ${data.probabilities.NFT3}%`;
+        nft4El.textContent = `NFT4: ${data.probabilities.NFT4}%`;
+        nft5El.textContent = `NFT5: ${data.probabilities.NFT5}%`;
+        nft6El.textContent = `NFT6: ${data.probabilities.NFT6}%`;
 
-        // Обработчик для отклонения нового ролла
-        document.getElementById("cancelBtn").addEventListener("click", () => {
-            if (!currentRollId) {
-                alert("Сначала выполните ролл!");
-                return;
-            }
-            fetch(`/api/rolls/${currentRollId}/cancel`, { method: "POST" })
-                .then(response => response.json())
-                .then(data => {
-                    alert("Новый ролл отклонён");
-                })
-                .catch(console.error);
-        });
+        // Если попыток больше нет, отключаем кнопку
+        if (data.attempts_left <= 0) {
+          rollBtn.disabled = true;
+          showMessage("Попытки закончились");
+        }
+      } catch (err) {
+        showError("Не удалось выполнить запрос");
+      }
+    }
 
-        // Начальное получение данных пользователя
-        fetchUserData();
-    </script>
+    // Инициализация
+    rollBtn.addEventListener('click', doRoll);
+
+    // Получаем данные пользователя при загрузке
+    fetchUserData();
+  </script>
 </body>
 </html>
