@@ -5,15 +5,13 @@ from django.urls import path
 
 from .views import home, get_user, roll, accept_roll, cancel_roll
 
-
+app_name = 'tg_app'
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-
     # Главная страница
     path('', home, name='home'),
 
-    # Эндпоинты для вашего API
+    # Эндпоинты для  API
     path('api/user', get_user, name='api-user'),
     path('api/roll', roll, name='api-roll'),
     path('api/rolls/<int:roll_id>/accept', accept_roll, name='api-accept-roll'),

@@ -1,13 +1,63 @@
 import random
 from django.db import transaction
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import render
-
+import numpy as np
 
 from .models import User, Roll
+
+# Базовые вероятности для NFT
+base_probabilities = {
+    "NFT1": 60,
+    "NFT2": 40,
+    "NFT3": 35,
+    "NFT4": 5,
+    "NFT5": 1,
+    "NFT6": 0.00001
+}
+
+
+
+def generate_roll_probabilities():
+    """
+    Генерирует вероятности для каждого NFT с учетом случайных коэффициентов и нормализации.
+    """
+    random_factors = np.random.uniform(0.5, 1.5, len(base_probabilities))
+
+    # Пересчитываем вероятности с учетом случайных коэффициентов
+    adjusted_probs = {nft: base_probabilities[nft] * factor for nft, factor in
+                      zip(base_probabilities.keys(), random_factors)}
+
+    # Нормализуем вероятности в диапазон от 0.01% до 100%
+    min_prob = 0.01
+    max_prob = 100
+
+    # Находим текущий диапазон вероятностей
+    min_val = min(adjusted_probs.values())
+    max_val = max(adjusted_probs.values())
+
+    # Масштабируем вероятности в нужный диапазон
+    scaled_probs = {
+        nft: ((prob - min_val) / (max_val - min_val)) * (max_prob - min_prob) + min_prob
+        for nft, prob in adjusted_probs.items()
+    }
+
+    return scaled_probs
+
+
+
+class TelegramPermission(BasePermission):
+    """
+    Разрешение для проверки telegram_id.
+    """
+
+    def has_permission(self, request, view):
+        telegram_id = request.data.get("telegram_id") or request.GET.get("telegram_id")
+        return telegram_id is not None
+
 
 
 
@@ -20,26 +70,10 @@ def home(request):
 
 @api_view(['GET'])
 def get_user(request):
-    """
-    Получение или создание/обновление данных пользователя по telegram_id.
-
-    Параметры запроса:
-      - telegram_id: идентификатор пользователя в Telegram (обязательный параметр).
-      - username: никнейм пользователя (опционально).
-
-    Логика работы:
-      - Если пользователь найден, обновляем его данные (например, username).
-      - Если пользователь не найден, создаем новую запись.
-      - В случае отсутствия параметра telegram_id возвращаем ошибку.
-    """
-
     telegram_id = request.GET.get("telegram_id")
 
     if not telegram_id:
-        return Response(
-            {"error": "telegram_id не предоставлен"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response({"error": "telegram_id не предоставлен"}, status=status.HTTP_400_BAD_REQUEST)
 
     username = request.GET.get("username", "")
 
@@ -53,8 +87,8 @@ def get_user(request):
             user.save()
 
     except User.DoesNotExist:
-        # Если пользователь не найден, создаем новую запись
-        user = User.objects.create(telegram_id=telegram_id, username=username)
+        # Если пользователя нет в базе данных, создаем его
+        user = User.objects.create(telegram_id=telegram_id, username=username, attempts_left=3)  # устанавливаем 3 попытки
 
     return Response({
         "telegram_id": user.telegram_id,
@@ -62,20 +96,12 @@ def get_user(request):
     }, status=status.HTTP_200_OK)
 
 
+
+
 @api_view(['POST'])
+@permission_classes([TelegramPermission])
 @transaction.atomic
 def roll(request):
-    """
-    Генерация нового ролла:
-      - Проверяет наличие попыток у пользователя.
-      - Генерирует вероятности для 6 NFT.
-      - Создаёт запись в базе данных с новым роллом (status = "pending").
-      - Уменьшает количество попыток.
-
-    Параметры запроса:
-      - telegram_id: идентификатор пользователя в Telegram (передаётся через тело запроса или GET-параметры).
-    """
-
     telegram_id = request.data.get("telegram_id") or request.GET.get("telegram_id")
     if not telegram_id:
         return Response({"error": "telegram_id не предоставлен"}, status=status.HTTP_400_BAD_REQUEST)
@@ -88,10 +114,10 @@ def roll(request):
     if user.attempts_left <= 0:
         return Response({"error": "Попытки закончились"}, status=status.HTTP_400_BAD_REQUEST)
 
-    nft_names = ["NFT1", "NFT2", "NFT3", "NFT4", "NFT5", "NFT6"]
-    probabilities = {name: round(random.uniform(0, 100), 2) for name in nft_names}
+    # Генерация вероятности для NFT
+    probabilities = generate_roll_probabilities()
 
-    # Создаём новый ролл в базе данных
+    # Создаем новый ролл в базе данных
     roll_instance = Roll.objects.create(
         user=user,
         roll_data=probabilities,
@@ -108,22 +134,16 @@ def roll(request):
         "probabilities": probabilities
     }, status=status.HTTP_201_CREATED)
 
+
 """Как вы помните я хотел сделать принятие и отмену в ТЗ. Но меня отговорили... Но я оставлю может вам потом пригодится"""
 
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
 @transaction.atomic
 def accept_roll(request, roll_id):
     """
     Принимает новый ролл (переводит в статус "completed").
-    Если ранее был принят другой ролл, он становится неактуальным.
-
-    Аргументы:
-      - roll_id: идентификатор ролла, который необходимо принять.
     """
-
     telegram_id = getattr(request.user, "telegram_id", None)
-
     if not telegram_id:
         return Response({"error": "Не удалось определить telegram_id пользователя"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -147,6 +167,7 @@ def accept_roll(request, roll_id):
         "status": roll_obj.status,
         "final_probabilities": roll_obj.roll_data
     }, status=status.HTTP_200_OK)
+
 
 
 @api_view(['POST'])

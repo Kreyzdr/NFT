@@ -2,11 +2,10 @@ import telebot
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 import requests
 
-from sekret_key.key import tg_token  # Импорт токена бота(из моего локальной папки)
 
 # Токен и URL
-API_TOKEN = tg_token
-WEBAPP_URL = "https://658f-203-76-245-58.ngrok-free.app"
+API_TOKEN = '7941054212:AAFMoTj7ZxIfsKBQihcWIZmC6AOicAxrl94'
+WEBAPP_URL = "https://1cf9-142-93-137-25.ngrok-free.app"
 
 bot = telebot.TeleBot(API_TOKEN)
 
@@ -69,3 +68,4 @@ def send_welcome(message):
 
 
 bot.polling(non_stop=True)
+

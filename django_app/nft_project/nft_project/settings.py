@@ -27,15 +27,18 @@ SECRET_KEY = 'django-insecure-*j4%59r=r0-xidy)#dd06nx&ndguc+tk6=t@-bk%m87pv884ug
 DEBUG = True
 
 ALLOWED_HOSTS = [
-    '*',
     '127.0.0.1',
     'localhost',
-    '658f-203-76-245-58.ngrok-free.app',
+    '1cf9-142-93-137-25.ngrok-free.app',
+    '.ngrok-free.app',
 ]
 
+
 CSRF_TRUSTED_ORIGINS = [
-    'https://658f-203-76-245-58.ngrok-free.app',
+    'https://1cf9-142-93-137-25.ngrok-free.app',
+    'https://*.ngrok-free.app',
 ]
+
 
 
 
@@ -130,11 +133,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # Добавлено для сборки статических файлов в production
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Добавлено для хранения загружаемых файлов
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
 # Default primary key field type
