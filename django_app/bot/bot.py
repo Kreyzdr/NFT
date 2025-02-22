@@ -4,7 +4,7 @@ import requests
 
 
 # Токен и URL
-API_TOKEN = '7941054212:AAFMoTj7ZxIfsKBQihcWIZmC6AOicAxrl94'
+API_TOKEN = 'TG_TOKEN'
 WEBAPP_URL = "https://1cf9-142-93-137-25.ngrok-free.app"
 
 bot = telebot.TeleBot(API_TOKEN)
